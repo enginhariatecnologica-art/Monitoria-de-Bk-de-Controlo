@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Monitoria BK PRO++++</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --primary:#1d4ed8;
+  --primary-dark:#1e3a8a;
+  --success:#15803d;
+  --danger:#b91c1c;
+  --warning:#b45309;
+  --info:#0369a1;
+  --bg:#f0f4fa;
+  --card:#ffffff;
+  --border:#dde3ef;
+  --text:#111827;
+  --soft:#6b7280;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+
+/* HEADER */
+header{
+  background:linear-gradient(135deg,#0f2057 0%,#1d4ed8 50%,#15803d 100%);
+  color:#fff;
+  padding:0 28px;
+  height:64px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  box-shadow:0 4px 20px rgba(0,0,0,.25);
+  position:sticky;top:0;z-index:100;
+}
+header .brand{display:flex;align-items:center;gap:12px}
+header .brand span{font-size:20px;font-weight:800;letter-spacing:-.5px}
+header .brand small{font-size:11px;opacity:.7;font-family:var(--mono);background:rgba(255,255,255,.15);padding:3px 8px;border-radius:6px}
+header .htime{font-family:var(--mono);font-size:13px;opacity:.85;background:rgba(255,255,255,.12);padding:6px 14px;border-radius:8px}
+
+/* NAV */
+nav{
+  display:flex;gap:6px;
+  padding:12px 24px;
+  background:#fff;
+  border-bottom:2px solid var(--border);
+  position:sticky;top:64px;z-index:50;
+}
+nav button{
+  padding:9px 20px;border-radius:10px;border:1.5px solid var(--border);
+  background:transparent;cursor:pointer;font-weight:600;font-size:14px;
+  color:var(--soft);transition:all .2s;font-family:var(--sans);
+}
+nav button:hover{border-color:var(--primary);color:var(--primary);background:#eff6ff}
+nav button.active{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 4px 12px rgba(29,78,216,.3)}
+
+.container{padding:24px;max-width:1600px;margin:auto}
+.hidden{display:none!important}
+
+/* CARDS KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.kpi{
+  background:#fff;border-radius:16px;padding:20px;
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
+  border-left:4px solid var(--primary);
+  position:relative;overflow:hidden;
+}
+.kpi::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.06;background:var(--kc,#1d4ed8)}
+.kpi small{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--soft);font-weight:700}
+.kpi .big{font-size:40px;font-weight:800;margin-top:4px;line-height:1;font-family:var(--mono)}
+.kpi.danger{border-left-color:var(--danger);--kc:#b91c1c}
+.kpi.success{border-left-color:var(--success);--kc:#15803d}
+.kpi.warning{border-left-color:var(--warning);--kc:#b45309}
+.kpi.info{border-left-color:var(--info);--kc:#0369a1}
+.blink-danger{animation:blinkBorder 1.2s infinite}
+@keyframes blinkBorder{0%,100%{box-shadow:0 2px 12px rgba(0,0,0,.06)}50%{box-shadow:0 0 0 3px rgba(185,28,28,.35),0 2px 20px rgba(185,28,28,.2)}}
+
+/* CHARTS GRID */
+.dashgrid{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:0}
+@media(max-width:1000px){.dashgrid{grid-template-columns:1fr}}
+
+/* CARD */
+.card{background:#fff;padding:22px;border-radius:18px;margin-bottom:18px;box-shadow:0 2px 16px rgba(0,0,0,.07);border:1px solid var(--border)}
+.card-title{font-size:14px;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:end}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:.6px}
+input,select{
+  padding:10px 13px;border-radius:10px;border:1.5px solid var(--border);
+  font-size:14px;font-family:var(--sans);color:var(--text);
+  background:#fff;transition:border-color .2s;width:100%;
+}
+input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(29,78,216,.1)}
+.btn{
+  padding:10px 20px;border:none;border-radius:10px;
+  background:var(--primary);color:#fff;font-weight:700;font-size:14px;
+  cursor:pointer;font-family:var(--sans);transition:all .2s;white-space:nowrap;
+}
+.btn:hover{background:var(--primary-dark);transform:translateY(-1px);box-shadow:0 4px 12px rgba(29,78,216,.3)}
+.btn.success{background:var(--success)}
+.btn.success:hover{background:#166534}
+.btn.danger{background:var(--danger)}
+.btn.sm{padding:6px 12px;font-size:12px}
+
+/* SEARCH ROW */
+.search-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.search-row input{max-width:300px;flex:1}
+
+/* TABLE */
+.table-wrap{overflow:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;min-width:1300px;font-size:13px}
+thead th{
+  background:#f8fafc;text-align:left;
+  padding:12px 14px;font-size:11px;font-weight:700;
+  color:var(--soft);text-transform:uppercase;letter-spacing:.7px;
+  border-bottom:2px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid #f1f5f9;transition:background .15s}
+tbody tr:hover{background:#f8faff}
+tbody td{padding:10px 14px;vertical-align:middle}
+tbody td input[type=date]{font-size:12px;padding:6px 8px;border-radius:7px;border:1.5px solid var(--border);font-family:var(--mono)}
+.plan{font-size:10px;color:#94a3b8;margin-top:3px;font-family:var(--mono)}
+
+/* STATUS BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.badge.atrasado{background:#fee2e2;color:#991b1b}
+.badge.hoje{background:#dbeafe;color:#1e40af}
+.badge.preparar{background:#fef3c7;color:#92400e}
+.badge.ok{background:#dcfce7;color:#14532d}
+
+/* FOTO */
+.foto-wrap{width:44px;height:44px;border-radius:10px;overflow:hidden;background:#f1f5f9;border:2px solid var(--border);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px}
+.foto-wrap img{width:100%;height:100%;object-fit:cover}
+.foto-cell{display:flex;align-items:center;gap:8px}
+
+/* UPLOAD FOTO */
+#fotoPreviewWrap{display:flex;align-items:center;gap:14px;margin-top:10px}
+#fotoPreview{width:72px;height:72px;border-radius:12px;object-fit:cover;border:2px solid var(--border);display:none}
+#fotoEmoji{width:72px;height:72px;border-radius:12px;background:#f1f5f9;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer}
+.foto-actions{display:flex;flex-direction:column;gap:6px}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:20px;padding:28px;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal h3{margin-bottom:18px;font-size:18px}
+.modal-btns{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+
+/* BLINK ICONS */
+.blinkIcon{display:inline-block;animation:blinkIcon 1s infinite;font-size:16px}
+@keyframes blinkIcon{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.35}}
+
+/* SELECT inline */
+select.inline{border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12px;font-family:var(--sans)}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#1f2937;color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:999;opacity:0;transform:translateY(20px);transition:all .3s;pointer-events:none}
+#toast.show{opacity:1;transform:translateY(0)}
+
+/* EXPORT ROW */
+.export-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+
+/* PAGINATION */
+.pag{display:flex;gap:8px;align-items:center;margin-top:14px;justify-content:flex-end;flex-wrap:wrap}
+.pag button{padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:13px;font-weight:600}
+.pag button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.pag span{font-size:13px;color:var(--soft)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span>🧪 BK PRO++++</span>
+    <small>Monitoria Tuberculose</small>
+  </div>
+  <div class="htime" id="hclock">--:--:--</div>
+</header>
+
+<nav>
+  <button onclick="show('dash',this)" class="active">📊 Dashboard</button>
+  <button onclick="show('pac',this)">🧑‍⚕️ Pacientes</button>
+  <button onclick="show('rel',this)">📋 Relatórios</button>
+</nav>
+
+<div class="container">
+
+<!-- DASHBOARD -->
+<div id="dash" class="page">
+  <div class="kpis">
+    <div class="kpi info"><small>Total Pacientes</small><div id="cTotal" class="big">0</div></div>
+    <div class="kpi"><small>Ativos</small><div id="cAtivos" class="big">0</div></div>
+    <div class="kpi success"><small>Curados</small><div id="cCurados" class="big">0</div></div>
+    <div class="kpi danger" id="cardAtras"><small>Atrasados</small><div id="cAtras" class="big">0</div></div>
+    <div class="kpi warning"><small>&lt; 15 anos</small><div id="cMenor15" class="big">0</div></div>
+  </div>
+  <div class="dashgrid">
+    <div class="card"><div class="card-title">📈 Evolução Mensal</div><canvas id="grafTempo" height="180"></canvas></div>
+    <div class="card"><div class="card-title">🗺️ Por Distrito</div><canvas id="graf" height="220"></canvas></div>
+  </div>
+</div>
+
+<!-- PACIENTES -->
+<div id="pac" class="page hidden">
+
+  <!-- Barra de busca + importar -->
+  <div class="card">
+    <div class="search-row">
+      <input id="busca" placeholder="🔍 Pesquisar por Nome ou NIT..." oninput="render()">
+      <label class="btn" style="margin:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        📂 Importar Excel <input id="file" type="file" accept=".xlsx,.xls" style="display:none" onchange="importExcel()">
+      </label>
+      <button class="btn success" onclick="exportExcel()">⬇️ Exportar Excel</button>
+    </div>
+  </div>
+
+  <!-- Formulário Adicionar -->
+  <div class="card">
+    <div class="card-title">➕ Adicionar Paciente</div>
+    <div class="form-grid">
+      <div class="field"><label>Nome Completo</label><input id="nome" placeholder="Nome do paciente"></div>
+      <div class="field"><label>NIT</label><input id="nit" placeholder="Número de identificação"></div>
+      <div class="field"><label>Idade</label><input id="idade" type="number" min="0" placeholder="Idade"></div>
+      <div class="field"><label>Unidade de Idade</label><select id="idadeUnidade"><option value="anos">Anos</option><option value="meses">Meses</option></select></div>
+      <div class="field"><label>Distrito</label>
+        <select id="dist"><option value="">— Selecionar —</option><option>Tambara</option><option>Guro</option><option>Barue</option><option>Vanduzi</option><option>Manica</option><option>Cidade de Chimoio</option><option>Gondola</option><option>Mossurize</option><option>Sussundenga</option><option>Macate</option><option>Machaze</option><option>Macossa</option></select>
+      </div>
+      <div class="field"><label>Unidade Sanitária</label><input id="unidadeSanitaria" placeholder="US de referência"></div>
+      <div class="field"><label>Data de Início</label><input id="inicio" type="date"></div>
+      <div class="field" style="align-self:end">
+        <button class="btn" onclick="add()">✅ Adicionar</button>
+      </div>
+    </div>
+
+    <!-- Upload de Foto -->
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div class="card-title" style="margin-bottom:10px">📷 Foto do Paciente <span style="font-size:11px;font-weight:400;color:var(--soft)">(opcional)</span></div>
+      <div id="fotoPreviewWrap">
+        <div id="fotoEmoji" onclick="document.getElementById('fotoInput').click()">👤</div>
+        <img id="fotoPreview" alt="Foto">
+        <div class="foto-actions">
+          <label class="btn sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px">
+            📸 Escolher Foto <input id="fotoInput" type="file" accept="image/*" style="display:none" onchange="previewFoto(event)">
+          </label>
+          <button class="btn sm danger" onclick="clearFoto()">🗑️ Remover</button>
+          <small style="color:var(--soft);font-size:11px">JPG, PNG, GIF</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div class="card-title" style="margin:0">🗃️ Lista de Pacientes</div>
+      <span id="countLabel" style="font-size:13px;color:var(--soft);font-weight:600"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Foto</th><th>Nome</th><th>NIT</th><th>Idade</th><th>Distrito</th><th>US</th><th>Início</th>
+          <th>BK2 <div class="plan">Semana 8</div></th>
+          <th>BK5 <div class="plan">Semana 20</div></th>
+          <th>BK6 <div class="plan">Semana 24</div></th>
+          <th>Status</th><th>Ações</th>
+        </tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+    <div class="pag" id="pag"></div>
+  </div>
+</div>
+
+<!-- RELATÓRIOS -->
+<div id="rel" class="page hidden">
+  <div class="card">
+    <div class="card-title">🔎 Filtros</div>
+    <div class="form-grid">
+      <div class="field"><label>Distrito</label>
+        <select id="filtroDistRel" onchange="render()">
+          <option value="">Todos os Distritos</option>
+          <option>Tambara</option><option>Guro</option><option>Barue</option><option>Vanduzi</option><option>Manica</option><option>Cidade de Chimoio</option><option>Gondola</option><option>Mossurize</option><option>Sussundenga</option><option>Macate</option><option>Machaze</option><option>Macossa</option>
+        </select>
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="filtroStatusRel" onchange="render()">
+          <option value="">Todos</option>
+          <option>Fase Intensiva</option><option>Em Manutenção</option><option>Curado</option>
+        </select>
+      </div>
+      <div class="field" style="align-self:end">
+        <button class="btn success" onclick="exportRelatorio()">⬇️ Exportar Relatório</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">📋 Relatório de Pacientes</div>
+    <div class="table-wrap">
+      <table id="relTable">
+        <thead><tr>
+          <th>Nome</th><th>NIT</th><th>Idade</th><th>Distrito</th><th>US</th><th>Início</th>
+          <th>Prev BK2</th><th>Prev BK5</th><th>Prev BK6</th>
+          <th>BK2 Feito</th><th>BK5 Feito</th><th>BK6 Feito</th><th>Status</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- MODAL EDITAR -->
+<div id="editModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3>✏️ Editar Paciente</h3>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="field"><label>Nome</label><input id="eNome"></div>
+      <div class="field"><label>NIT</label><input id="eNit"></div>
+      <div class="field"><label>Idade</label><input id="eIdade" type="number"></div>
+      <div class="field"><label>Unidade</label><select id="eIdadeUnidade"><option value="anos">Anos</option><option value="meses">Meses</option></select></div>
+      <div class="field"><label>Distrito</label>
+        <select id="eDist"><option value="">—</option><option>Tambara</option><option>Guro</option><option>Barue</option><option>Vanduzi</option><option>Manica</option><option>Cidade de Chimoio</option><option>Gondola</option><option>Mossurize</option><option>Sussundenga</option><option>Macate</option><option>Machaze</option><option>Macossa</option></select>
+      </div>
+      <div class="field"><label>Unidade Sanitária</label><input id="eUS"></div>
+      <div class="field"><label>Data Início</label><input id="eInicio" type="date"></div>
+      <div class="field"><label>Status</label>
+        <select id="eStatus"><option>Fase Intensiva</option><option>Em Manutenção</option><option>Curado</option></select>
+      </div>
+    </div>
+    <!-- Foto no modal -->
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="eFotoEmoji" style="width:60px;height:60px;border-radius:10px;background:#f1f5f9;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer" onclick="document.getElementById('eFotoInput').click()">👤</div>
+        <img id="eFotoPreview" style="width:60px;height:60px;border-radius:10px;object-fit:cover;border:2px solid var(--border);display:none" alt="">
+        <label class="btn sm" style="cursor:pointer">📸 Foto <input id="eFotoInput" type="file" accept="image/*" style="display:none" onchange="previewFotoEdit(event)"></label>
+        <button class="btn sm danger" onclick="clearFotoEdit()">🗑️</button>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn danger" onclick="closeEdit()">Cancelar</button>
+      <button class="btn success" onclick="saveEdit()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR DELETE -->
+<div id="delModal" class="modal-bg hidden">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">⚠️</div>
+    <h3>Eliminar Paciente?</h3>
+    <p style="color:var(--soft);margin-top:8px;font-size:14px">Esta acção não pode ser desfeita.</p>
+    <div class="modal-btns" style="justify-content:center">
+      <button class="btn" onclick="closeDelete()">Cancelar</button>
+      <button class="btn danger" onclick="confirmDelete()">🗑️ Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+let pacientes = JSON.parse(localStorage.getItem('bkpro') || '[]');
+const save = () => localStorage.setItem('bkpro', JSON.stringify(pacientes));
+
+// ─── CLOCK ──────────────────────────────────────────────────────────────────
+setInterval(() => {
+  const n = new Date();
+  document.getElementById('hclock').textContent =
+    n.toLocaleDateString('pt') + '  ' +
+    n.toLocaleTimeString('pt');
+}, 1000);
+
+// ─── NAV ────────────────────────────────────────────────────────────────────
+function show(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+  const page = document.getElementById(id);
+  if (page) page.classList.remove('hidden');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  render();
+}
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+const dias = i => Math.floor((Date.now() - new Date(i)) / 86400000);
+function addDays(dateStr, days) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toLocaleDateString('pt');
+}
+function plano(inicio, a, b) {
+  return `${addDays(inicio, a)} – ${addDays(inicio, b)}`;
+}
+function estado(d, a, b, res) {
+  if (res && d >= a && d <= b) return ['OK', '<span class="badge ok">✅ OK</span>'];
+  if (d > b && !res) return ['ATRASADO', '<span class="badge atrasado"><span class="blinkIcon">🔴</span> ATRASADO</span>'];
+  if (d >= a && d <= b && !res) return ['FAZER HOJE', '<span class="badge hoje"><span class="blinkIcon">🔵</span> FAZER HOJE</span>'];
+  if (d >= a - 5 && d < a && !res) return ['PREPARAR', '<span class="badge preparar"><span class="blinkIcon">🟡</span> PREPARAR</span>'];
+  if (res) return ['FEITO', '<span class="badge ok">✅ FEITO</span>'];
+  return ['', ''];
+}
+function idadeFormatada(v, u) { return (v || v === 0) ? `${v} ${u}` : ''; }
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type === 'success' ? '✅ ' : '❌ ') + msg;
+  t.className = 'show';
+  setTimeout(() => t.className = '', 2800);
+}
+
+// ─── FOTO ────────────────────────────────────────────────────────────────────
+let currentFotoBase64 = null;
+function previewFoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentFotoBase64 = e.target.result;
+    document.getElementById('fotoPreview').src = currentFotoBase64;
+    document.getElementById('fotoPreview').style.display = 'block';
+    document.getElementById('fotoEmoji').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+function clearFoto() {
+  currentFotoBase64 = null;
+  document.getElementById('fotoPreview').style.display = 'none';
+  document.getElementById('fotoEmoji').style.display = 'flex';
+  document.getElementById('fotoInput').value = '';
+}
+
+// ─── EDIT FOTO ────────────────────────────────────────────────────────────────
+let editFotoBase64 = null;
+function previewFotoEdit(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    editFotoBase64 = e.target.result;
+    document.getElementById('eFotoPreview').src = editFotoBase64;
+    document.getElementById('eFotoPreview').style.display = 'block';
+    document.getElementById('eFotoEmoji').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+function clearFotoEdit() {
+  editFotoBase64 = '__remove__';
+  document.getElementById('eFotoPreview').style.display = 'none';
+  document.getElementById('eFotoEmoji').style.display = 'flex';
+  document.getElementById('eFotoInput').value = '';
+}
+
+// ─── ADD ─────────────────────────────────────────────────────────────────────
+function add() {
+  const n = document.getElementById('nome').value.trim();
+  const nit = document.getElementById('nit').value.trim();
+  const idade = document.getElementById('idade').value;
+  const idadeUnidade = document.getElementById('idadeUnidade').value;
+  const dist = document.getElementById('dist').value;
+  const us = document.getElementById('unidadeSanitaria').value.trim();
+  const inicio = document.getElementById('inicio').value;
+
+  if (!n || !nit || !dist || !inicio) { toast('Preencha todos os campos obrigatórios', 'error'); return; }
+  if (pacientes.some(p => p.nit === nit)) { toast('NIT já existe!', 'error'); return; }
+
+  pacientes.push({
+    id: Date.now(),
+    nome: n, nit, idade: Number(idade), idadeUnidade,
+    dist, unidadeSanitaria: us, inicio,
+    status: 'Fase Intensiva',
+    foto: currentFotoBase64 || null
+  });
+  save(); clearFoto();
+  document.getElementById('nome').value = '';
+  document.getElementById('nit').value = '';
+  document.getElementById('idade').value = '';
+  document.getElementById('unidadeSanitaria').value = '';
+  document.getElementById('dist').value = '';
+  document.getElementById('inicio').value = '';
+  toast('Paciente adicionado com sucesso!');
+  render();
+}
+
+// ─── IMPORT EXCEL ─────────────────────────────────────────────────────────────
+function importExcel() {
+  const f = document.getElementById('file').files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+      let added = 0, skipped = 0;
+      rows.forEach(x => {
+        const nit = String(x.NIT || x.nit || '').trim();
+        if (!nit) return;
+        if (pacientes.some(p => p.nit === nit)) { skipped++; return; }
+        pacientes.push({
+          id: Date.now() + Math.random(),
+          nome: x.Nome || x.nome || '',
+          nit,
+          idade: Number(x.Idade || 0),
+          idadeUnidade: x.UnidadeIdade || 'anos',
+          dist: x.Distrito || '',
+          unidadeSanitaria: x['Unidade Sanitária'] || x.UnidadeSanitaria || '',
+          inicio: excelDateToStr(x['Data início'] || x['Data Inicio'] || x.Inicio || ''),
+          bk2: x.BK2 || '',
+          bk5: x.BK5 || '',
+          bk6: x.BK6 || '',
+          status: x.Status || 'Fase Intensiva',
+          foto: null
+        });
+        added++;
+      });
+      save(); render();
+      toast(`${added} importados, ${skipped} ignorados (NIT duplicado)`);
+    } catch (err) {
+      toast('Erro ao ler o ficheiro Excel', 'error');
+    }
+  };
+  r.readAsBinaryString(f);
+  document.getElementById('file').value = '';
+}
+
+function excelDateToStr(val) {
+  if (!val) return '';
+  if (typeof val === 'string' && val.includes('-')) return val;
+  if (typeof val === 'number') {
+    const date = new Date((val - 25569) * 86400000);
+    return date.toISOString().slice(0, 10);
+  }
+  return String(val);
+}
+
+// ─── EXPORT EXCEL ─────────────────────────────────────────────────────────────
+function exportExcel() {
+  const data = pacientes.map(p => ({
+    Nome: p.nome, NIT: p.nit, Idade: p.idade, UnidadeIdade: p.idadeUnidade,
+    Distrito: p.dist, 'Unidade Sanitária': p.unidadeSanitaria || '',
+    'Data início': p.inicio, BK2: p.bk2 || '', BK5: p.bk5 || '', BK6: p.bk6 || '',
+    Status: p.status || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pacientes');
+  XLSX.writeFile(wb, `BK_PRO_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Excel exportado!');
+}
+
+function exportRelatorio() {
+  const dist = document.getElementById('filtroDistRel').value;
+  const status = document.getElementById('filtroStatusRel').value;
+  let filtered = pacientes.filter(p =>
+    (!dist || p.dist === dist) && (!status || p.status === status)
+  );
+  const data = filtered.map(p => ({
+    Nome: p.nome, NIT: p.nit, Idade: idadeFormatada(p.idade, p.idadeUnidade),
+    Distrito: p.dist, 'Unidade Sanitária': p.unidadeSanitaria || '',
+    'Data início': p.inicio,
+    'Prev BK2': plano(p.inicio, 53, 60), 'Prev BK5': plano(p.inicio, 143, 150), 'Prev BK6': plano(p.inicio, 173, 180),
+    'BK2 Feito': p.bk2 || '', 'BK5 Feito': p.bk5 || '', 'BK6 Feito': p.bk6 || '',
+    Status: p.status || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
+  XLSX.writeFile(wb, `BK_Relatorio_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Relatório exportado!');
+}
+
+// ─── PAGINAÇÃO ────────────────────────────────────────────────────────────────
+let currentPage = 1;
+const PER_PAGE = 20;
+
+// ─── EDIT / DELETE ────────────────────────────────────────────────────────────
+let editIndex = null;
+let deleteIndex = null;
+
+function openEdit(i) {
+  editIndex = i;
+  const p = pacientes[i];
+  document.getElementById('eNome').value = p.nome;
+  document.getElementById('eNit').value = p.nit;
+  document.getElementById('eIdade').value = p.idade;
+  document.getElementById('eIdadeUnidade').value = p.idadeUnidade || 'anos';
+  document.getElementById('eDist').value = p.dist;
+  document.getElementById('eUS').value = p.unidadeSanitaria || '';
+  document.getElementById('eInicio').value = p.inicio;
+  document.getElementById('eStatus').value = p.status || 'Fase Intensiva';
+  editFotoBase64 = null;
+  if (p.foto) {
+    document.getElementById('eFotoPreview').src = p.foto;
+    document.getElementById('eFotoPreview').style.display = 'block';
+    document.getElementById('eFotoEmoji').style.display = 'none';
+  } else {
+    document.getElementById('eFotoPreview').style.display = 'none';
+    document.getElementById('eFotoEmoji').style.display = 'flex';
+  }
+  document.getElementById('editModal').classList.remove('hidden');
+}
+function closeEdit() { document.getElementById('editModal').classList.add('hidden'); editIndex = null; }
+
+function saveEdit() {
+  if (editIndex === null) return;
+  const p = pacientes[editIndex];
+  p.nome = document.getElementById('eNome').value.trim();
+  p.nit = document.getElementById('eNit').value.trim();
+  p.idade = Number(document.getElementById('eIdade').value);
+  p.idadeUnidade = document.getElementById('eIdadeUnidade').value;
+  p.dist = document.getElementById('eDist').value;
+  p.unidadeSanitaria = document.getElementById('eUS').value.trim();
+  p.inicio = document.getElementById('eInicio').value;
+  p.status = document.getElementById('eStatus').value;
+  if (editFotoBase64 === '__remove__') p.foto = null;
+  else if (editFotoBase64) p.foto = editFotoBase64;
+  save(); closeEdit(); render(); toast('Paciente actualizado!');
+}
+
+function openDelete(i) {
+  deleteIndex = i;
+  document.getElementById('delModal').classList.remove('hidden');
+}
+function closeDelete() { document.getElementById('delModal').classList.add('hidden'); deleteIndex = null; }
+function confirmDelete() {
+  if (deleteIndex !== null) { pacientes.splice(deleteIndex, 1); save(); render(); toast('Paciente eliminado'); }
+  closeDelete();
+}
+
+// Close modals on bg click
+document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEdit(); });
+document.getElementById('delModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDelete(); });
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+let chartTempo = null, chartDist = null;
+
+function render() {
+  const b = document.getElementById('busca')?.value?.toLowerCase() || '';
+  const filtroDistRel = document.getElementById('filtroDistRel')?.value || '';
+  const filtroStatusRel = document.getElementById('filtroStatusRel')?.value || '';
+  const tb = document.getElementById('tb');
+  let atrasados = 0, distCount = {}, mesCount = {}, ativos = 0, curados = 0, menor15 = 0;
+
+  // Filter for patient table
+  const visiblePac = pacientes.filter(p => {
+    if (p.status === 'Curado') return false;
+    if (b && !(p.nome?.toLowerCase().includes(b) || p.nit?.toLowerCase().includes(b))) return false;
+    return true;
+  });
+
+  // Count all for KPIs
+  pacientes.forEach(p => {
+    const d = dias(p.inicio);
+    const e2 = estado(d, 53, 60, p.bk2);
+    const e5 = estado(d, 143, 150, p.bk5);
+    const e6 = estado(d, 173, 180, p.bk6);
+    if (p.idadeUnidade === 'anos' && p.idade < 15) menor15++;
+    if (p.status !== 'Curado' && [e2, e5, e6].some(e => e[0] === 'ATRASADO')) atrasados++;
+    if (p.status === 'Curado') curados++; else ativos++;
+    const m = (p.inicio || '').slice(0, 7);
+    if (m) mesCount[m] = (mesCount[m] || 0) + 1;
+    distCount[p.dist] = (distCount[p.dist] || 0) + 1;
+  });
+
+  document.getElementById('cTotal').textContent = pacientes.length;
+  document.getElementById('cAtivos').textContent = ativos;
+  document.getElementById('cCurados').textContent = curados;
+  document.getElementById('cAtras').textContent = atrasados;
+  document.getElementById('cMenor15').textContent = menor15;
+  document.getElementById('cardAtras').classList.toggle('blink-danger', atrasados > 0);
+
+  // Count label
+  const cLabel = document.getElementById('countLabel');
+  if (cLabel) cLabel.textContent = `${visiblePac.length} paciente(s) activo(s)`;
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(visiblePac.length / PER_PAGE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const pageItems = visiblePac.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+
+  if (tb) {
+    tb.innerHTML = '';
+    pageItems.forEach(p => {
+      const i = pacientes.indexOf(p);
+      const d = dias(p.inicio);
+      const e2 = estado(d, 53, 60, p.bk2);
+      const e5 = estado(d, 143, 150, p.bk5);
+      const e6 = estado(d, 173, 180, p.bk6);
+      const fotoCell = p.foto
+        ? `<div class="foto-wrap"><img src="${p.foto}" alt=""></div>`
+        : `<div class="foto-wrap">👤</div>`;
+      tb.innerHTML += `<tr>
+        <td><div class="foto-cell">${fotoCell}</div></td>
+        <td><b>${p.nome}</b></td>
+        <td style="font-family:var(--mono);font-size:12px">${p.nit}</td>
+        <td>${idadeFormatada(p.idade, p.idadeUnidade)}</td>
+        <td>${p.dist}</td>
+        <td style="font-size:12px">${p.unidadeSanitaria || '—'}</td>
+        <td style="font-family:var(--mono);font-size:12px">${p.inicio}</td>
+        <td>${e2[1]}<br><input type="date" value="${p.bk2 || ''}" onchange="pacientes[${i}].bk2=this.value;save();render()" style="margin-top:4px"><div class="plan">${plano(p.inicio, 53, 60)}</div></td>
+        <td>${e5[1]}<br><input type="date" value="${p.bk5 || ''}" onchange="pacientes[${i}].bk5=this.value;save();render()" style="margin-top:4px"><div class="plan">${plano(p.inicio, 143, 150)}</div></td>
+        <td>${e6[1]}<br><input type="date" value="${p.bk6 || ''}" onchange="pacientes[${i}].bk6=this.value;save();render()" style="margin-top:4px"><div class="plan">${plano(p.inicio, 173, 180)}</div></td>
+        <td><select class="inline" onchange="pacientes[${i}].status=this.value;save();render()">
+          <option ${p.status === 'Fase Intensiva' ? 'selected' : ''}>Fase Intensiva</option>
+          <option ${p.status === 'Em Manutenção' ? 'selected' : ''}>Em Manutenção</option>
+          <option ${p.status === 'Curado' ? 'selected' : ''}>Curado</option>
+        </select></td>
+        <td style="white-space:nowrap">
+          <button class="btn sm" onclick="openEdit(${i})" style="margin-right:4px">✏️</button>
+          <button class="btn sm danger" onclick="openDelete(${i})">🗑️</button>
+        </td>
+      </tr>`;
+    });
+  }
+
+  // Pagination controls
+  const pag = document.getElementById('pag');
+  if (pag) {
+    pag.innerHTML = '';
+    if (totalPages > 1) {
+      const info = document.createElement('span');
+      info.textContent = `Página ${currentPage} de ${totalPages}`;
+      pag.appendChild(info);
+      for (let pg = 1; pg <= totalPages; pg++) {
+        const btn = document.createElement('button');
+        btn.textContent = pg;
+        if (pg === currentPage) btn.classList.add('active');
+        btn.onclick = () => { currentPage = pg; render(); };
+        pag.appendChild(btn);
+      }
+    }
+  }
+
+  // Charts
+  const gt = document.getElementById('grafTempo');
+  if (gt) {
+    const L = Object.keys(mesCount).sort();
+    const V = L.map(x => mesCount[x]);
+    if (chartTempo) chartTempo.destroy();
+    chartTempo = new Chart(gt, { type: 'line', data: { labels: L, datasets: [{ label: 'Pacientes registados/mês', data: V, tension: .4, fill: true, borderColor: '#1d4ed8', backgroundColor: 'rgba(29,78,216,.1)', pointBackgroundColor: '#1d4ed8' }] }, options: { plugins: { legend: { display: false } } } });
+  }
+  const graf = document.getElementById('graf');
+  if (graf) {
+    const L = Object.keys(distCount).filter(k => k);
+    const V = L.map(k => distCount[k]);
+    if (chartDist) chartDist.destroy();
+    chartDist = new Chart(graf, { type: 'doughnut', data: { labels: L, datasets: [{ data: V, borderWidth: 2, borderColor: '#fff' }] }, options: { plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } } });
+  }
+
+  // Relatórios table
+  const relT = document.querySelector('#relTable tbody');
+  if (relT) {
+    relT.innerHTML = '';
+    pacientes.filter(p =>
+      (!filtroDistRel || p.dist === filtroDistRel) &&
+      (!filtroStatusRel || p.status === filtroStatusRel)
+    ).forEach(p => {
+      relT.innerHTML += `<tr>
+        <td><b>${p.nome}</b></td>
+        <td style="font-family:var(--mono);font-size:12px">${p.nit}</td>
+        <td>${idadeFormatada(p.idade, p.idadeUnidade)}</td>
+        <td>${p.dist}</td>
+        <td style="font-size:12px">${p.unidadeSanitaria || '—'}</td>
+        <td style="font-family:var(--mono);font-size:12px">${p.inicio}</td>
+        <td style="font-size:11px;font-family:var(--mono)">${plano(p.inicio, 53, 60)}</td>
+        <td style="font-size:11px;font-family:var(--mono)">${plano(p.inicio, 143, 150)}</td>
+        <td style="font-size:11px;font-family:var(--mono)">${plano(p.inicio, 173, 180)}</td>
+        <td style="font-family:var(--mono);font-size:12px">${p.bk2 || '—'}</td>
+        <td style="font-family:var(--mono);font-size:12px">${p.bk5 || '—'}</td>
+        <td style="font-family:var(--mono);font-size:12px">${p.bk6 || '—'}</td>
+        <td>${p.status || '—'}</td>
+      </tr>`;
+    });
+  }
+}
+
+render();
+</script>
+</body>
+</html>
